@@ -1,0 +1,825 @@
+{
+  "info": {
+    "name": "Fawry - Smart Grocery API",
+    "_postman_id": "fawry-grocery-collection-v1",
+    "description": "Complete API collection for the Smart Grocery List & Price Lookup application.\n\n## Setup\n1. Import this collection.\n2. Import the `Fawry-Grocery.postman_environment.json` environment file.\n3. Select the **Fawry Grocery** environment.\n4. Run **Register Admin** then **Login Admin** — the token is saved automatically.\n\n## Flow\nSee the folder descriptions for detailed flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Auth",
+      "description": "Step 1 — Register and login. Tokens are saved automatically to the environment variable `authToken`.",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "description": "Registers a new user with ROLE_USER. Returns a JWT token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.environment.set('authToken', json.token);",
+                  "    pm.environment.set('currentUser', json.username);",
+                  "    console.log('Token saved for user:', json.username);",
+                  "}",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register/admin", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","register","admin"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"email\": \"admin@fawry.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "description": "Registers a new admin with ROLE_ADMIN. Returns a JWT token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.environment.set('authToken', json.token);",
+                  "    pm.environment.set('adminToken', json.token);",
+                  "    pm.environment.set('currentUser', json.username);",
+                  "    console.log('Admin token saved for:', json.username);",
+                  "}",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "description": "Authenticates an existing admin. Token saved to `authToken`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.environment.set('authToken', json.token);",
+                  "    pm.environment.set('adminToken', json.token);",
+                  "    pm.environment.set('currentUser', json.username);",
+                  "    console.log('Logged in as:', json.username, '| Role:', json.role);",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has token', () => pm.expect(pm.response.json().token).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api","v1","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "description": "Authenticates a regular user. Token saved to `authToken`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) {",
+                  "    pm.environment.set('authToken', json.token);",
+                  "    pm.environment.set('userToken', json.token);",
+                  "    pm.environment.set('currentUser', json.username);",
+                  "    console.log('Logged in as:', json.username, '| Role:', json.role);",
+                  "}",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Admin — Browse TheMealDB",
+      "description": "Admin searches for meals in TheMealDB to decide which ones to import into the grocery database.",
+      "item": [
+        {
+          "name": "Search Meals by Name",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/meals/search?query=chicken",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","meals","search"],
+              "query": [{ "key": "query", "value": "chicken" }]
+            },
+            "description": "Search TheMealDB for meals matching the query. Note the `idMeal` field from results — you'll need it to import."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json && json.length > 0) {",
+                  "    pm.environment.set('mealId', json[0].idMeal);",
+                  "    console.log('First meal ID saved:', json[0].idMeal, '-', json[0].strMeal);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/meals/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","meals","categories"]
+            },
+            "description": "Lists all food categories from TheMealDB (Chicken, Seafood, Vegetarian, etc.)"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Meals by Category",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/meals/by-category?category=Seafood",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","meals","by-category"],
+              "query": [{ "key": "category", "value": "Seafood" }]
+            },
+            "description": "Returns all meals in a given category with full details."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Meal by ID (TheMealDB)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/meals/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","meals","{{mealId}}"]
+            },
+            "description": "Fetch full meal details from TheMealDB by its ID."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Admin — Product Management",
+      "description": "Admin imports meals, sets prices/calories, and approves items for users to see.",
+      "item": [
+        {
+          "name": "Import Meal from TheMealDB",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/import/{{mealId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","import","{{mealId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estimatedPrice\": 12.99,\n  \"calories\": 450.0,\n  \"brand\": \"Fawry Grocery\",\n  \"approved\": false\n}"
+            },
+            "description": "Imports a TheMealDB meal into the product database. Body is optional — use it to set price, calories, brand and initial approval status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json && json.id) {",
+                  "    pm.environment.set('productId', json.id);",
+                  "    console.log('Product imported. ID:', json.id, '| Name:', json.name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bulk Import Meals",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/bulk-import",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","bulk-import"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalIds\": [\"52772\", \"52773\", \"52774\", \"52775\"],\n  \"defaultPrice\": 9.99,\n  \"defaultCalories\": 380.0,\n  \"autoApprove\": false\n}"
+            },
+            "description": "Import multiple meals at once. Returns counts of imported, skipped (already exists), and failed items."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "console.log('Imported:', json.importedCount, '| Skipped:', json.skipped.length, '| Failed:', json.failed.length);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Custom Product (Manual)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organic Brown Rice\",\n  \"category\": \"Grains\",\n  \"area\": \"International\",\n  \"brand\": \"Nature's Best\",\n  \"estimatedPrice\": 5.49,\n  \"calories\": 215.0,\n  \"nutrients\": \"{\\\"protein\\\":\\\"4g\\\",\\\"carbs\\\":\\\"45g\\\",\\\"fat\\\":\\\"1.5g\\\",\\\"fiber\\\":\\\"2g\\\"}\",\n  \"ingredients\": \"[{\\\"ingredient\\\":\\\"Brown Rice\\\",\\\"measure\\\":\\\"1 cup\\\"}]\",\n  \"approved\": false\n}"
+            },
+            "description": "Manually create a product not from TheMealDB (e.g. a packaged grocery item)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json && json.id) {",
+                  "    pm.environment.set('productId', json.id);",
+                  "    console.log('Custom product created. ID:', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Products (Admin — with unapproved)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products?page=0&size=10&sortBy=createdAt&sortDir=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortDir", "value": "desc" },
+                { "key": "name", "value": "", "disabled": true },
+                { "key": "category", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Paginated list of ALL products (approved and unapproved). Enable the `name` or `category` query params to filter."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "console.log('Total products:', json.totalElements, '| Page:', json.number + 1, '/', json.totalPages);",
+                  "if (json.content && json.content.length > 0) {",
+                  "    pm.environment.set('productId', json.content[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Single Product (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","{{productId}}"]
+            },
+            "description": "Returns full details for any product (approved or not)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","{{productId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estimatedPrice\": 15.99,\n  \"calories\": 520.0,\n  \"brand\": \"Fawry Premium\",\n  \"nutrients\": \"{\\\"protein\\\":\\\"35g\\\",\\\"carbs\\\":\\\"20g\\\",\\\"fat\\\":\\\"12g\\\"}\"\n}"
+            },
+            "description": "Partial update — only send the fields you want to change."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Product ✅",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","{{productId}}","approve"]
+            },
+            "description": "Approves a product — makes it visible to all users in the grocery list."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Product is approved', () => pm.expect(json.approved).to.be.true);",
+                  "console.log('Product approved:', json.name);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unapprove Product ❌",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}/unapprove",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","{{productId}}","unapprove"]
+            },
+            "description": "Removes a product from the approved grocery list. Users won't see it anymore."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Product is unapproved', () => pm.expect(json.approved).to.be.false);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Product 🗑️",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","admin","products","{{productId}}"]
+            },
+            "description": "Permanently deletes a product from the database."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. User — Browse Grocery Items",
+      "description": "Authenticated users browse the approved grocery catalog. Switch `authToken` to the user's token first using 'Login User'.",
+      "item": [
+        {
+          "name": "Get Approved Products (Paginated)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?page=0&size=10&sortBy=name&sortDir=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","products"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sortBy", "value": "name" },
+                { "key": "sortDir", "value": "asc" },
+                { "key": "name", "value": "", "disabled": true },
+                { "key": "category", "value": "", "disabled": true }
+              ]
+            },
+            "description": "Returns paginated list of approved grocery items. Enable and fill the `name` or `category` params to search/filter."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "console.log('Total approved items:', json.totalElements);",
+                  "if (json.content && json.content.length > 0) {",
+                  "    pm.environment.set('productId', json.content[0].id);",
+                  "    console.log('First product ID saved:', json.content[0].id, '-', json.content[0].name);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search by Name",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?name=chicken&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","products"],
+              "query": [
+                { "key": "name", "value": "chicken" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            },
+            "description": "Filter approved products by name (case-insensitive, partial match)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter by Category",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products?category=Seafood&page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","products"],
+              "query": [
+                { "key": "category", "value": "Seafood" },
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" }
+              ]
+            },
+            "description": "Filter approved products by category."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","products","{{productId}}"]
+            },
+            "description": "Returns full details of an approved item: name, category, area, thumbnail, calories, brand, estimated price, nutrients (JSON), and ingredients (JSON array)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "console.log('Product:', json.name, '| Price: $' + json.estimatedPrice, '| Calories:', json.calories);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. User — Shopping List",
+      "description": "Manage the authenticated user's personal shopping list.",
+      "item": [
+        {
+          "name": "Get My Shopping List",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shopping-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","shopping-list"]
+            },
+            "description": "Returns the user's full shopping list with quantities, unit prices and calculated total price per item."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "console.log('Shopping list items:', json.length);",
+                  "var total = json.reduce((sum, item) => sum + item.totalPrice, 0);",
+                  "console.log('Grand Total: $' + total.toFixed(2));",
+                  "if (json && json.length > 0) {",
+                  "    pm.environment.set('shoppingItemId', json[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Item to Shopping List",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shopping-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","shopping-list"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": {{productId}},\n  \"quantity\": 2\n}"
+            },
+            "description": "Add an approved product to the shopping list. If the product is already in the list, the quantity is incremented automatically."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json && json.id) {",
+                  "    pm.environment.set('shoppingItemId', json.id);",
+                  "    console.log('Item added. ID:', json.id, '| Product:', json.productName, '| Total: $' + json.totalPrice);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Item Quantity",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shopping-list/{{shoppingItemId}}?quantity=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","shopping-list","{{shoppingItemId}}"],
+              "query": [{ "key": "quantity", "value": "5" }]
+            },
+            "description": "Update the quantity of a shopping list item. Must be ≥ 1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "console.log('Quantity updated to:', json.quantity, '| New Total: $' + json.totalPrice);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Remove Item from Shopping List",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shopping-list/{{shoppingItemId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","shopping-list","{{shoppingItemId}}"]
+            },
+            "description": "Removes a specific item from the shopping list."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clear Entire Shopping List",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{authToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/shopping-list",
+              "host": ["{{baseUrl}}"],
+              "path": ["api","v1","shopping-list"]
+            },
+            "description": "Removes ALL items from the current user's shopping list."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));",
+                  "console.log('Shopping list cleared.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
